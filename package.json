@@ -1,6 +1,6 @@
 {
   "name": "bing-wallpaper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "一个获取必应每日壁纸的 npm 包",
   "keywords": [
     "bing",
