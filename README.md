@@ -264,10 +264,6 @@ pnpm run build
 pnpm run test
 ```
 
-## 📄 许可证
-
-MIT License - 查看 [LICENSE](LICENSE) 文件了解详情。
-
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
