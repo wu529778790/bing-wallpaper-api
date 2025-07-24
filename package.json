@@ -1,7 +1,14 @@
 {
   "name": "bing-wallpaper",
-  "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "一个获取必应每日壁纸的 npm 包",
+  "keywords": [
+    "bing",
+    "wallpaper",
+    "api",
+    "image"
+  ],
+  "author": "wu529778790",
   "type": "module",
   "files": [
     "dist",
@@ -17,7 +24,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.10"
   },
   "devDependencies": {
     "typescript": "~5.8.3",

@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      dayjs:
+        specifier: ^1.11.10
+        version: 1.11.13
     devDependencies:
       typescript:
         specifier: ~5.8.3
@@ -276,6 +280,9 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
+  dayjs@1.11.13:
+    resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
+
   esbuild@0.25.8:
     resolution: {integrity: sha512-vVC0USHGtMi8+R4Kz8rt6JhEWLxsv9Rnu/lGYbPR8u47B+DCBksq9JarW0zOO7bs37hyOK1l2/oqtbciutL5+Q==}
     engines: {node: '>=18'}
@@ -509,6 +516,8 @@ snapshots:
     optional: true
 
   '@types/estree@1.0.8': {}
+
+  dayjs@1.11.13: {}
 
   esbuild@0.25.8:
     optionalDependencies:
