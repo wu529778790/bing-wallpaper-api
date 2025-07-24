@@ -58,24 +58,4 @@ export declare function getBingWallpaper(
   options?: BingWallpaperOptions
 ): Promise<BingWallpaperData>;
 
-/**
- * 获取今日必应壁纸（快捷方法）
- * @param resolution 壁纸分辨率
- * @returns Promise<BingWallpaperData> 壁纸数据
- */
-export declare function getTodayBingWallpaper(
-  resolution?: BingWallpaperOptions["resolution"]
-): Promise<BingWallpaperData>;
-
-/**
- * 获取指定日期的必应壁纸（快捷方法）
- * @param date 日期
- * @param resolution 壁纸分辨率
- * @returns Promise<BingWallpaperData> 壁纸数据
- */
-export declare function getBingWallpaperByDate(
-  date: Date | dayjs.Dayjs | string,
-  resolution?: BingWallpaperOptions["resolution"]
-): Promise<BingWallpaperData>;
-
 export { getBingWallpaper as default };

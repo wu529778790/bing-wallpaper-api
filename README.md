@@ -29,25 +29,25 @@ yarn add bing-wallpaper-api
 ### ESM (推荐)
 
 ```javascript
-import { getBingWallpaper, getTodayBingWallpaper, getBingWallpaperByDate } from 'bing-wallpaper-api';
+import { getBingWallpaper } from 'bing-wallpaper-api';
 
 // 获取今日壁纸
-const todayWallpaper = await getTodayBingWallpaper();
+const todayWallpaper = await getBingWallpaper();
 console.log('今日壁纸:', todayWallpaper.url);
 
 // 获取指定日期的壁纸
-const wallpaper = await getBingWallpaperByDate('2024-01-01');
+const wallpaper = await getBingWallpaper({ date: '2024-01-01' });
 console.log('元旦壁纸:', wallpaper.title);
 ```
 
 ### CommonJS
 
 ```javascript
-const { getBingWallpaper, getTodayBingWallpaper } = require('bing-wallpaper-api');
+const { getBingWallpaper } = require('bing-wallpaper-api');
 
 // 获取今日壁纸
 (async () => {
-  const wallpaper = await getTodayBingWallpaper();
+  const wallpaper = await getBingWallpaper();
   console.log('今日壁纸:', wallpaper.url);
 })();
 ```
@@ -78,47 +78,13 @@ const specific = await getBingWallpaper({
   date: '2024-01-01',
   resolution: 'UHD'
 });
-```
 
-### `getTodayBingWallpaper(resolution?)`
+// 获取指定日期的壁纸（支持多种日期格式）
+const wallpaper1 = await getBingWallpaper({ date: '2024-01-01' });
+const wallpaper2 = await getBingWallpaper({ date: new Date('2024-01-01') });
 
-获取今日壁纸的快捷方法。
-
-**参数:**
-
-- `resolution` (可选): 壁纸分辨率
-
-**返回:** `Promise<BingWallpaperData>`
-
-```javascript
-import { getTodayBingWallpaper } from 'bing-wallpaper-api';
-
-const wallpaper = await getTodayBingWallpaper('UHD');
-```
-
-### `getBingWallpaperByDate(date, resolution?)`
-
-获取指定日期壁纸的快捷方法。
-
-**参数:**
-
-- `date`: 日期（支持 Date 对象、dayjs 对象或字符串）
-- `resolution` (可选): 壁纸分辨率
-
-**返回:** `Promise<BingWallpaperData>`
-
-```javascript
-import { getBingWallpaperByDate } from 'bing-wallpaper-api';
-import dayjs from 'dayjs';
-
-// 使用字符串
-const wallpaper1 = await getBingWallpaperByDate('2024-01-01');
-
-// 使用 Date 对象
-const wallpaper2 = await getBingWallpaperByDate(new Date('2024-01-01'));
-
-// 使用 dayjs 对象
-const wallpaper3 = await getBingWallpaperByDate(dayjs('2024-01-01'));
+// 获取今日高清壁纸
+const uhd = await getBingWallpaper({ resolution: 'UHD' });
 ```
 
 ## 🔧 配置选项
@@ -223,19 +189,20 @@ const jp = await getBingWallpaper({ market: 'ja-JP' });
 ### 下载壁纸
 
 ```javascript
-import { getTodayBingWallpaper } from 'bing-wallpaper-api';
+import { getBingWallpaper } from 'bing-wallpaper-api';
 import fs from 'fs';
 
 async function downloadWallpaper() {
   try {
-    const wallpaper = await getTodayBingWallpaper('UHD');
+    // 获取今日超高清壁纸
+    const wallpaper = await getBingWallpaper({ resolution: 'UHD' });
     
     // 获取图片数据
     const response = await fetch(wallpaper.url);
     const buffer = await response.arrayBuffer();
     
     // 保存到本地
-    const filename = `bing-wallpaper-api-${wallpaper.startdate}.jpg`;
+    const filename = `bing-wallpaper-${wallpaper.startdate}.jpg`;
     fs.writeFileSync(filename, Buffer.from(buffer));
     
     console.log(`壁纸已保存为: ${filename}`);
@@ -246,6 +213,30 @@ async function downloadWallpaper() {
 }
 
 downloadWallpaper();
+```
+
+### 高级用法组合
+
+```javascript
+import { getBingWallpaper } from 'bing-wallpaper-api';
+import dayjs from 'dayjs';
+
+// 结合 dayjs 使用
+const lastWeek = await getBingWallpaper({ 
+  date: dayjs().subtract(7, 'day'),
+  resolution: 'UHD',
+  market: 'en-US'
+});
+
+// 批量获取最近一周的壁纸
+async function getWeeklyWallpapers() {
+  const wallpapers = [];
+  for (let i = 0; i < 7; i++) {
+    const wallpaper = await getBingWallpaper({ index: i });
+    wallpapers.push(wallpaper);
+  }
+  return wallpapers;
+}
 ```
 
 ## 🛠️ 开发

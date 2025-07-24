@@ -155,29 +155,5 @@ export async function getBingWallpaper(
   }
 }
 
-/**
- * 获取今日必应壁纸（快捷方法）
- * @param resolution 壁纸分辨率
- * @returns Promise<BingWallpaperData> 壁纸数据
- */
-export async function getTodayBingWallpaper(
-  resolution?: BingWallpaperOptions["resolution"]
-): Promise<BingWallpaperData> {
-  return getBingWallpaper({ resolution });
-}
-
-/**
- * 获取指定日期的必应壁纸（快捷方法）
- * @param date 日期
- * @param resolution 壁纸分辨率
- * @returns Promise<BingWallpaperData> 壁纸数据
- */
-export async function getBingWallpaperByDate(
-  date: Date | dayjs.Dayjs | string,
-  resolution?: BingWallpaperOptions["resolution"]
-): Promise<BingWallpaperData> {
-  return getBingWallpaper({ date, resolution });
-}
-
 // 默认导出主函数
 export default getBingWallpaper;

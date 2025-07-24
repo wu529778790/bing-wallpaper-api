@@ -1,8 +1,4 @@
-import {
-  getBingWallpaper,
-  getTodayBingWallpaper,
-  getBingWallpaperByDate,
-} from "./dist/bing-wallpaper-api.js";
+import { getBingWallpaper } from "./dist/bing-wallpaper-api.js";
 
 async function test() {
   console.log("🎯 开始测试必应壁纸包...\n");
@@ -10,7 +6,7 @@ async function test() {
   try {
     // 测试获取今日壁纸
     console.log("1️⃣ 测试获取今日壁纸:");
-    const todayWallpaper = await getTodayBingWallpaper();
+    const todayWallpaper = await getBingWallpaper();
     console.log("✅ 今日壁纸:", {
       title: todayWallpaper.title,
       url: todayWallpaper.url.substring(0, 100) + "...",
@@ -23,7 +19,7 @@ async function test() {
     console.log("2️⃣ 测试获取昨天的壁纸:");
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayWallpaper = await getBingWallpaperByDate(yesterday);
+    const yesterdayWallpaper = await getBingWallpaper({ date: yesterday });
     console.log("✅ 昨天的壁纸:", {
       title: yesterdayWallpaper.title,
       url: yesterdayWallpaper.url.substring(0, 100) + "...",
@@ -39,6 +35,17 @@ async function test() {
       title: uhdWallpaper.title,
       url: uhdWallpaper.url.substring(0, 100) + "...",
       startdate: uhdWallpaper.startdate,
+    });
+    console.log("");
+
+    // 测试使用索引获取历史壁纸
+    console.log("4️⃣ 测试使用索引获取前天的壁纸:");
+    const dayBeforeWallpaper = await getBingWallpaper({ index: 2 });
+    console.log("✅ 前天的壁纸:", {
+      title: dayBeforeWallpaper.title,
+      url: dayBeforeWallpaper.url.substring(0, 100) + "...",
+      copyright: dayBeforeWallpaper.copyright.substring(0, 50) + "...",
+      startdate: dayBeforeWallpaper.startdate,
     });
     console.log("");
 
