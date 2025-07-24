@@ -1,5 +1,5 @@
 {
-  "name": "bing-wallpaper",
+  "name": "bing-wallpaper-api",
   "version": "1.0.1",
   "description": "一个获取必应每日壁纸的 npm 包",
   "keywords": [
@@ -14,13 +14,13 @@
     "dist",
     "index.d.ts"
   ],
-  "main": "./dist/bing-wallpaper.umd.cjs",
-  "module": "./dist/bing-wallpaper.js",
+  "main": "./dist/bing-wallpaper-api.umd.cjs",
+  "module": "./dist/bing-wallpaper-api.js",
   "types": "./index.d.ts",
   "exports": {
     "types": "./index.d.ts",
-    "import": "./dist/bing-wallpaper.js",
-    "require": "./dist/bing-wallpaper.umd.cjs"
+    "import": "./dist/bing-wallpaper-api.js",
+    "require": "./dist/bing-wallpaper-api.umd.cjs"
   },
   "scripts": {
     "dev": "vite",

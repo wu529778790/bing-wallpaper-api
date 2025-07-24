@@ -4,8 +4,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: "./lib/main.ts",
-      name: "BingWallpaper",
-      fileName: "bing-wallpaper",
+      name: "BingWallpaperApi",
+      fileName: "bing-wallpaper-api",
     },
     rollupOptions: {
       // 确保外部化依赖不会被打包到库中
