@@ -2,7 +2,7 @@ import {
   getBingWallpaper,
   getTodayBingWallpaper,
   getBingWallpaperByDate,
-} from "./dist/bing-wallpaper.js";
+} from "./dist/bing-wallpaper-api.js";
 
 async function test() {
   console.log("🎯 开始测试必应壁纸包...\n");
