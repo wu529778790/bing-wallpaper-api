@@ -284,7 +284,7 @@ MIT License - 查看 [LICENSE](LICENSE) 文件了解详情。
 ## 🔗 相关链接
 
 - [必应首页](https://www.bing.com)
-- [dayjs 文档](https://dayjs.gitee.io/docs/zh-CN/installation/installation)
+- [dayjs 文档](https://day.js.org/)
 
 ---
 
