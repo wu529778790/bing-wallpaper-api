@@ -120,7 +120,9 @@ export async function getBingWallpaper(
       title: image.title || "必应每日壁纸",
       copyright: image.copyright || "",
       copyrightlink: image.copyrightlink
-        ? `https://www.bing.com${image.copyrightlink}`
+        ? image.copyrightlink.startsWith("http")
+          ? image.copyrightlink
+          : `https://www.bing.com${image.copyrightlink}`
         : undefined,
       startdate: image.startdate || targetDate.format("YYYYMMDD"),
       urlbase: image.urlbase || "",
