@@ -2,6 +2,10 @@
 
 一个获取必应每日壁纸的 npm 包，支持指定日期、分辨率等参数。使用 TypeScript 编写，提供完整的类型定义。
 
+演示项目：<https://github.com/wu529778790/bing-wallpaper>
+
+演示地址：<https://bing.shenzjd.com/>
+
 [![npm version](https://img.shields.io/npm/v/bing-wallpaper-api.svg)](https://www.npmjs.com/package/bing-wallpaper-api)
 
 ## ✨ 特性
