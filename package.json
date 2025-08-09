@@ -1,6 +1,6 @@
 {
   "name": "bing-wallpaper-api",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "一个获取必应每日壁纸的 npm 包",
   "keywords": [
     "bing",
