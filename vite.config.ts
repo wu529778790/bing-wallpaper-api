@@ -5,7 +5,15 @@ export default defineConfig({
     lib: {
       entry: "./lib/main.ts",
       name: "BingWallpaperApi",
-      fileName: (format) => `bing-wallpaper-api.${format}.js`,
+      fileName: (format) => {
+        if (format === 'cjs') {
+          return `bing-wallpaper-api.cjs`;
+        } else if (format === 'es') {
+          return `bing-wallpaper-api.js`;
+        } else {
+          return `bing-wallpaper-api.${format}.js`;
+        }
+      },
       formats: ['es', 'cjs', 'umd'], // 明确指定输出格式
     },
     rollupOptions: {
