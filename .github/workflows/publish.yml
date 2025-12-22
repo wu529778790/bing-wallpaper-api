@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   auto-publish:
     runs-on: ubuntu-latest
@@ -20,6 +24,8 @@ jobs:
         with:
           node-version: "18"
           registry-url: "https://registry.npmjs.org"
+          # Enable Trusted Publishing for authentication
+          scope: "@wu529778790"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
@@ -94,8 +100,6 @@ jobs:
           git push origin HEAD:${{ github.ref_name }}
           git push origin --tags
 
-      - name: Publish to NPM
+      - name: Publish to NPM using Trusted Publishing
         if: steps.should_update.outputs.skip == 'false'
-        run: pnpm publish --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm publish --provenance --no-git-checks
