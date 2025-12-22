@@ -1,4 +1,4 @@
-import { getBingWallpaper } from "./dist/bing-wallpaper-api.es.js";
+import { getBingWallpaper } from "./dist/bing-wallpaper-api.js";
 
 async function test() {
   console.log("🎯 开始测试必应壁纸包...\n");
