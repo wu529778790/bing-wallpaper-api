@@ -20,9 +20,9 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "18"
+          node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
       - name: Setup pnpm
@@ -104,4 +104,6 @@ jobs:
           echo "npm version: $(npm --version)"
           echo "Package name: $(node -p "require('./package.json').name")"
           echo "Registry: $(npm config get registry)"
+          # 确保 npm 版本 >= 11.5.1 (Trusted Publishing 要求)
+          npm install -g npm@latest || true
           npm publish --provenance
