@@ -7,6 +7,8 @@
 演示地址：<https://bing.shenzjd.com/>
 
 [![npm version](https://img.shields.io/npm/v/bing-wallpaper-api.svg)](https://www.npmjs.com/package/bing-wallpaper-api)
+[![npm downloads](https://img.shields.io/npm/dm/bing-wallpaper-api.svg)](https://www.npmjs.com/package/bing-wallpaper-api)
+[![GitHub license](https://img.shields.io/github/license/wu529778790/bing-wallpaper-api)](https://github.com/wu529778790/bing-wallpaper-api/blob/main/LICENSE)
 
 ## ✨ 特性
 
@@ -14,12 +16,10 @@
 - 📅 支持指定日期获取历史壁纸
 - 🖼️ 支持多种分辨率
 - 🌍 支持多个地区市场
-- ⏱️ 内置请求缓存机制，避免重复API调用
-- 🚦 请求超时控制，防止长时间等待
-- 🔒 完善的参数校验和错误处理
 - 📦 轻量级，无额外依赖（除了 dayjs）
 - 🔧 完整的 TypeScript 支持
 - 🚀 同时支持 ESM 和 CommonJS
+- 🛡️ 严格的安全策略，无隐私风险
 
 ## 📦 安装
 
@@ -81,7 +81,7 @@ const wallpaper = await getBingWallpaper();
 const yesterday = await getBingWallpaper({ index: 1 });
 
 // 获取指定日期的壁纸
-const specific = await getBingWallpaper({
+const specific = await getBingWallpaper({ 
   date: '2024-01-01',
   resolution: 'UHD'
 });
@@ -102,15 +102,15 @@ const uhd = await getBingWallpaper({ resolution: 'UHD' });
 interface BingWallpaperOptions {
   /** 日期，可以是 Date 对象、dayjs 对象或日期字符串 */
   date?: Date | dayjs.Dayjs | string;
-
+  
   /** 壁纸分辨率，默认为 1920x1080 */
-  resolution?: 'UHD' | '1920x1200' | '1920x1080' | '1366x768' | '1280x768'
-    | '1024x768' | '800x600' | '800x480' | '768x1280' | '720x1280'
+  resolution?: 'UHD' | '1920x1200' | '1920x1080' | '1366x768' | '1280x768' 
+    | '1024x768' | '800x600' | '800x480' | '768x1280' | '720x1280' 
     | '640x480' | '480x800' | '400x240' | '320x240' | '240x320';
-
+  
   /** 市场区域，默认为 'zh-CN' */
   market?: 'zh-CN' | 'en-US' | 'ja-JP' | 'en-AU' | 'en-GB' | 'de-DE' | 'en-NZ' | 'en-CA';
-
+  
   /** 壁纸索引，0表示今天，1表示昨天，以此类推，默认为0 */
   index?: number;
 }
@@ -122,49 +122,23 @@ interface BingWallpaperOptions {
 interface BingWallpaperData {
   /** 壁纸的URL链接 */
   url: string;
-
+  
   /** 壁纸标题 */
   title: string;
-
+  
   /** 版权信息 */
   copyright: string;
-
+  
   /** 版权链接 */
   copyrightlink?: string;
-
+  
   /** 日期，格式为 YYYYMMDD */
   startdate: string;
-
+  
   /** URL基础路径 */
   urlbase: string;
 }
 ```
-
-## 🛡️ 错误处理
-
-库提供了自定义错误类型 `BingWallpaperError`，包含错误代码：
-
-```typescript
-import { getBingWallpaper, BingWallpaperError } from 'bing-wallpaper-api';
-
-try {
-  const wallpaper = await getBingWallpaper({ date: 'invalid-date' });
-} catch (error) {
-  if (error instanceof BingWallpaperError) {
-    console.log('错误代码:', error.code); // 例如: 'INVALID_DATE', 'REQUEST_TIMEOUT', 'API_ERROR'
-    console.log('错误信息:', error.message);
-  }
-}
-```
-
-**常见错误代码:**
-- `INVALID_DATE`: 无效的日期格式
-- `INVALID_INDEX`: 索引超出范围 (0-7)
-- `INVALID_RESOLUTION`: 不支持的分辨率
-- `INVALID_MARKET`: 不支持的市场区域
-- `REQUEST_TIMEOUT`: 请求超时
-- `API_ERROR`: API 请求失败
-- `NO_DATA_FOUND`: 没有找到壁纸数据
 
 ## 📝 使用示例
 
@@ -229,15 +203,15 @@ async function downloadWallpaper() {
   try {
     // 获取今日超高清壁纸
     const wallpaper = await getBingWallpaper({ resolution: 'UHD' });
-
+    
     // 获取图片数据
     const response = await fetch(wallpaper.url);
     const buffer = await response.arrayBuffer();
-
+    
     // 保存到本地
     const filename = `bing-wallpaper-${wallpaper.startdate}.jpg`;
     fs.writeFileSync(filename, Buffer.from(buffer));
-
+    
     console.log(`壁纸已保存为: ${filename}`);
     console.log(`标题: ${wallpaper.title}`);
   } catch (error) {
@@ -255,7 +229,7 @@ import { getBingWallpaper } from 'bing-wallpaper-api';
 import dayjs from 'dayjs';
 
 // 结合 dayjs 使用
-const lastWeek = await getBingWallpaper({
+const lastWeek = await getBingWallpaper({ 
   date: dayjs().subtract(7, 'day'),
   resolution: 'UHD',
   market: 'en-US'
@@ -295,11 +269,10 @@ pnpm run test
 
 以下是一些建议和最佳实践：
 
-1. **缓存机制**: 库已内置内存缓存，相同参数的请求会被缓存
+1. **缓存机制**: 对于相同日期的请求，建议在应用层实现缓存机制
 2. **错误处理**: 网络请求可能失败，请妥善处理异常情况
 3. **图片尺寸**: 根据实际使用场景选择合适的分辨率
 4. **使用限制**: 请遵守必应的使用条款，不要过度频繁地请求API
-5. **超时控制**: 默认请求超时为10秒，可根据需要调整
 
 ## 🔗 相关链接
 
@@ -309,3 +282,7 @@ pnpm run test
 ---
 
 如果觉得这个包对你有帮助，请给个 ⭐ 支持一下！
+
+## 📄 许可证
+
+MIT License
