@@ -100,4 +100,8 @@ jobs:
 
       - name: Publish to NPM using Trusted Publishing
         if: steps.should_update.outputs.skip == 'false'
-        run: npm publish --provenance
+        run: |
+          echo "npm version: $(npm --version)"
+          echo "Package name: $(node -p "require('./package.json').name")"
+          echo "Registry: $(npm config get registry)"
+          npm publish --provenance
