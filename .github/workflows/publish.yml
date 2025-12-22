@@ -25,6 +25,9 @@ jobs:
           node-version: "18"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -100,4 +103,4 @@ jobs:
 
       - name: Publish to NPM using Trusted Publishing
         if: steps.should_update.outputs.skip == 'false'
-        run: npm publish --provenance
+        run: npm publish --provenance --access public
