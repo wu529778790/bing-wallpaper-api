@@ -49,6 +49,12 @@ export interface BingWallpaperOptions {
   index?: number;
 }
 
+/** 自定义错误类，包含错误代码 */
+export declare class BingWallpaperError extends Error {
+  code?: string;
+  constructor(message: string, code?: string);
+}
+
 /**
  * 获取必应每日壁纸
  * @param options 配置选项

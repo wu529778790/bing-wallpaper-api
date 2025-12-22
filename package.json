@@ -1,6 +1,6 @@
 {
   "name": "bing-wallpaper-api",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "一个获取必应每日壁纸的 npm 包",
   "keywords": [
     "bing",
@@ -18,18 +18,21 @@
     "dist",
     "index.d.ts"
   ],
-  "main": "./dist/bing-wallpaper-api.umd.cjs",
+  "main": "./dist/bing-wallpaper-api.cjs",
   "module": "./dist/bing-wallpaper-api.js",
   "types": "./index.d.ts",
   "exports": {
-    "types": "./index.d.ts",
-    "import": "./dist/bing-wallpaper-api.js",
-    "require": "./dist/bing-wallpaper-api.umd.cjs"
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./dist/bing-wallpaper-api.js",
+      "require": "./dist/bing-wallpaper-api.cjs"
+    }
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "node test.js"
+    "test": "node test.js",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "dayjs": "^1.11.10"

@@ -3,7 +3,7 @@
     "target": "es2022",
     "useDefineForClassFields": true,
     "module": "esnext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022"],
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -11,7 +11,9 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "noEmit": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
 
     /* Linting */
     "strict": true,
@@ -20,5 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["lib", "types"]
 }
