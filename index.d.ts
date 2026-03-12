@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 
 export interface BingWallpaperData {
-  /** 壁纸的URL链接 */
+  /** 壁纸的 URL 链接 */
   url: string;
   /** 壁纸标题 */
   title: string;
@@ -11,14 +11,16 @@ export interface BingWallpaperData {
   copyrightlink?: string;
   /** 日期，格式为 YYYYMMDD */
   startdate: string;
-  /** URL基础路径 */
+  /** URL 基础路径 */
   urlbase: string;
 }
 
 export interface BingWallpaperOptions {
-  /** 日期，可以是 Date 对象、dayjs 对象或日期字符串 */
+  /** 日期，可以是 Date、dayjs 对象或日期字符串 */
   date?: Date | dayjs.Dayjs | string;
-  /** 壁纸分辨率，默认为 1920x1080 */
+  /** IANA 时区，例如 Asia/Shanghai */
+  timezone?: string;
+  /** 壁纸分辨率，默认 1920x1080 */
   resolution?:
     | "UHD"
     | "1920x1200"
@@ -35,7 +37,7 @@ export interface BingWallpaperOptions {
     | "400x240"
     | "320x240"
     | "240x320";
-  /** 市场区域，默认为 'zh-CN' */
+  /** 市场区域，默认 zh-CN */
   market?:
     | "zh-CN"
     | "en-US"
@@ -45,23 +47,19 @@ export interface BingWallpaperOptions {
     | "de-DE"
     | "en-NZ"
     | "en-CA";
-  /** 壁纸索引，0表示今天，1表示昨天，以此类推，默认为0 */
+  /** 壁纸索引，0 表示今天，1 表示昨天 */
   index?: number;
 }
 
-/** 自定义错误类，包含错误代码 */
 export declare class BingWallpaperError extends Error {
   code?: string;
   constructor(message: string, code?: string);
 }
 
-/**
- * 获取必应每日壁纸
- * @param options 配置选项
- * @returns Promise<BingWallpaperData> 壁纸数据
- */
 export declare function getBingWallpaper(
   options?: BingWallpaperOptions
 ): Promise<BingWallpaperData>;
+
+export declare function clearBingWallpaperCache(): void;
 
 export { getBingWallpaper as default };

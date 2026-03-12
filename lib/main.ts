@@ -1,4 +1,51 @@
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
+import timezonePlugin from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezonePlugin);
+dayjs.extend(customParseFormat);
+
+const VALID_RESOLUTIONS = [
+  "UHD",
+  "1920x1200",
+  "1920x1080",
+  "1366x768",
+  "1280x768",
+  "1024x768",
+  "800x600",
+  "800x480",
+  "768x1280",
+  "720x1280",
+  "640x480",
+  "480x800",
+  "400x240",
+  "320x240",
+  "240x320",
+] as const;
+
+const VALID_MARKETS = [
+  "zh-CN",
+  "en-US",
+  "ja-JP",
+  "en-AU",
+  "en-GB",
+  "de-DE",
+  "en-NZ",
+  "en-CA",
+] as const;
+
+type Resolution = (typeof VALID_RESOLUTIONS)[number];
+type Market = (typeof VALID_MARKETS)[number];
+
+const VALID_RESOLUTION_SET = new Set<string>(VALID_RESOLUTIONS);
+const VALID_MARKET_SET = new Set<string>(VALID_MARKETS);
+const DEFAULT_RESOLUTION: Resolution = "1920x1080";
+const DEFAULT_MARKET: Market = "zh-CN";
+const CACHE_TTL_MS = 60 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 10_000;
+const MAX_INDEX = 7;
 
 export interface BingWallpaperData {
   /** 壁纸的URL链接 */
@@ -18,33 +65,12 @@ export interface BingWallpaperData {
 export interface BingWallpaperOptions {
   /** 日期，可以是 Date 对象、dayjs 对象或日期字符串 */
   date?: Date | dayjs.Dayjs | string;
+  /** IANA 时区，例如 Asia/Shanghai。未传时使用运行环境本地时区 */
+  timezone?: string;
   /** 壁纸分辨率，默认为 1920x1080 */
-  resolution?:
-    | "UHD"
-    | "1920x1200"
-    | "1920x1080"
-    | "1366x768"
-    | "1280x768"
-    | "1024x768"
-    | "800x600"
-    | "800x480"
-    | "768x1280"
-    | "720x1280"
-    | "640x480"
-    | "480x800"
-    | "400x240"
-    | "320x240"
-    | "240x320";
+  resolution?: Resolution;
   /** 市场区域，默认为 'zh-CN' */
-  market?:
-    | "zh-CN"
-    | "en-US"
-    | "ja-JP"
-    | "en-AU"
-    | "en-GB"
-    | "de-DE"
-    | "en-NZ"
-    | "en-CA";
+  market?: Market;
   /** 壁纸索引，0表示今天，1表示昨天，以此类推，默认为0 */
   index?: number;
 }
@@ -53,7 +79,7 @@ export interface BingWallpaperOptions {
 export class BingWallpaperError extends Error {
   constructor(message: string, public readonly code?: string) {
     super(message);
-    this.name = 'BingWallpaperError';
+    this.name = "BingWallpaperError";
   }
 }
 
@@ -95,11 +121,11 @@ class SimpleCache {
     return item.data;
   }
 
-  set(key: string, data: BingWallpaperData, ttl: number = 3600000): void { // 默认1小时
+  set(key: string, data: BingWallpaperData, ttl: number = CACHE_TTL_MS): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl,
     });
   }
 
@@ -111,88 +137,120 @@ class SimpleCache {
 const cache = new SimpleCache();
 
 /** 验证分辨率是否有效 */
-function isValidResolution(resolution: string): boolean {
-  const validResolutions: Array<
-    | "UHD"
-    | "1920x1200"
-    | "1920x1080"
-    | "1366x768"
-    | "1280x768"
-    | "1024x768"
-    | "800x600"
-    | "800x480"
-    | "768x1280"
-    | "720x1280"
-    | "640x480"
-    | "480x800"
-    | "400x240"
-    | "320x240"
-    | "240x320"
-  > = [
-    "UHD",
-    "1920x1200",
-    "1920x1080",
-    "1366x768",
-    "1280x768",
-    "1024x768",
-    "800x600",
-    "800x480",
-    "768x1280",
-    "720x1280",
-    "640x480",
-    "480x800",
-    "400x240",
-    "320x240",
-    "240x320"
-  ];
-
-  return validResolutions.includes(resolution as any);
+function isValidResolution(resolution: string): resolution is Resolution {
+  return VALID_RESOLUTION_SET.has(resolution);
 }
 
 /** 验证市场区域是否有效 */
-function isValidMarket(market: string): boolean {
-  const validMarkets: Array<
-    | "zh-CN"
-    | "en-US"
-    | "ja-JP"
-    | "en-AU"
-    | "en-GB"
-    | "de-DE"
-    | "en-NZ"
-    | "en-CA"
-  > = [
-    "zh-CN",
-    "en-US",
-    "ja-JP",
-    "en-AU",
-    "en-GB",
-    "de-DE",
-    "en-NZ",
-    "en-CA"
-  ];
+function isValidMarket(market: string): market is Market {
+  return VALID_MARKET_SET.has(market);
+}
 
-  return validMarkets.includes(market as any);
+/** 验证 IANA 时区是否有效 */
+function isValidTimezone(timezone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getNow(timezone?: string): dayjs.Dayjs {
+  return timezone ? dayjs().tz(timezone) : dayjs();
+}
+
+function parseTargetDate(date: BingWallpaperOptions["date"], timezone?: string): dayjs.Dayjs {
+  if (typeof date === "string") {
+    return timezone ? dayjs.tz(date, timezone) : dayjs(date);
+  }
+
+  if (date instanceof Date) {
+    const parsed = dayjs(date);
+    return timezone ? parsed.tz(timezone) : parsed;
+  }
+
+  if (timezone) {
+    return date!.tz(timezone);
+  }
+
+  return date!;
+}
+
+function normalizeCopyrightLink(link?: string): string | undefined {
+  if (!link) {
+    return undefined;
+  }
+
+  return link.startsWith("http") ? link : `https://www.bing.com${link}`;
+}
+
+function buildImageUrl(url: string, resolution: Resolution): string {
+  const normalizedUrl = url.startsWith("http") ? url : `https://www.bing.com${url}`;
+
+  if (resolution === DEFAULT_RESOLUTION) {
+    return normalizedUrl;
+  }
+
+  return normalizedUrl.replace(/1920x1080/, resolution);
+}
+
+function buildCacheKey(params: {
+  market: Market;
+  resolution: Resolution;
+  timezone?: string;
+  calculatedIndex: number;
+  targetDate: dayjs.Dayjs;
+}): string {
+  return JSON.stringify({
+    market: params.market,
+    resolution: params.resolution,
+    timezone: params.timezone ?? null,
+    calculatedIndex: params.calculatedIndex,
+    targetDate: params.targetDate.format("YYYY-MM-DD"),
+  });
+}
+
+function canUseBackupSource(params: { calculatedIndex: number; market: Market }): boolean {
+  return params.calculatedIndex === 0 && params.market === DEFAULT_MARKET;
+}
+
+function toWallpaperData(
+  image: BingApiResponse["images"][number],
+  resolution: Resolution,
+  fallbackDate: string
+): BingWallpaperData {
+  return {
+    url: buildImageUrl(image.url, resolution),
+    title: image.title || "必应每日壁纸",
+    copyright: image.copyright || "",
+    copyrightlink: normalizeCopyrightLink(image.copyrightlink),
+    startdate: image.startdate || fallbackDate,
+    urlbase: image.urlbase || "",
+  };
 }
 
 /** 带超时的 fetch 函数 */
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout: number = 10000): Promise<Response> {
-  // 创建 AbortController 来控制请求超时
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = REQUEST_TIMEOUT_MS
+): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const response = await fetch(url, {
+    return await fetch(url, {
       ...options,
-      signal: controller.signal
+      signal: controller.signal,
     });
-    clearTimeout(id);
-    return response;
   } catch (error) {
-    clearTimeout(id);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new BingWallpaperError('请求超时', 'REQUEST_TIMEOUT');
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new BingWallpaperError("请求超时", "REQUEST_TIMEOUT");
     }
     throw error;
+  } finally {
+    clearTimeout(id);
   }
 }
 
@@ -204,22 +262,14 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout:
 export async function getBingWallpaper(
   options: BingWallpaperOptions = {}
 ): Promise<BingWallpaperData> {
-  // 生成缓存键
-  const cacheKey = JSON.stringify(options);
-  const cachedResult = cache.get(cacheKey);
-  if (cachedResult) {
-    return cachedResult;
+  const { date, timezone, resolution = DEFAULT_RESOLUTION, market = DEFAULT_MARKET, index = 0 } =
+    options;
+
+  if (date !== undefined && index !== 0) {
+    throw new BingWallpaperError("date 和 index 不能同时使用", "CONFLICTING_OPTIONS");
   }
 
-  const {
-    date,
-    resolution = "1920x1080",
-    market = "zh-CN",
-    index = 0,
-  } = options;
-
-  // 验证并标准化参数
-  if (index !== undefined && (index < 0 || index > 7)) {
+  if (!Number.isInteger(index) || index < 0 || index > MAX_INDEX) {
     throw new BingWallpaperError(`索引必须在 0-7 之间，当前值: ${index}`, "INVALID_INDEX");
   }
 
@@ -231,38 +281,27 @@ export async function getBingWallpaper(
     throw new BingWallpaperError(`不支持的市场区域: ${market}`, "INVALID_MARKET");
   }
 
-  let targetDate: dayjs.Dayjs;
-
-  // 处理日期参数
-  if (date) {
-    if (typeof date === "string") {
-      targetDate = dayjs(date);
-      if (!targetDate.isValid()) {
-        throw new BingWallpaperError("无效的日期格式", "INVALID_DATE");
-      }
-    } else if (date instanceof Date) {
-      targetDate = dayjs(date);
-      if (!targetDate.isValid()) {
-        throw new BingWallpaperError("无效的日期对象", "INVALID_DATE");
-      }
-    } else {
-      targetDate = date; // dayjs 对象
-      if (!targetDate.isValid()) {
-        throw new BingWallpaperError("无效的日期对象", "INVALID_DATE");
-      }
-    }
-  } else {
-    targetDate = dayjs();
+  if (timezone && !isValidTimezone(timezone)) {
+    throw new BingWallpaperError(`无效的时区: ${timezone}`, "INVALID_TIMEZONE");
   }
 
-  // 如果指定了日期，计算与今天的差值作为index
+  let targetDate: dayjs.Dayjs;
+
+  if (date) {
+    targetDate = parseTargetDate(date, timezone);
+    if (!targetDate.isValid()) {
+      throw new BingWallpaperError("无效的日期格式", "INVALID_DATE");
+    }
+  } else {
+    targetDate = getNow(timezone);
+  }
+
   let calculatedIndex = index;
   if (date) {
-    const today = dayjs();
-    calculatedIndex = today.diff(targetDate, "day");
+    const today = getNow(timezone);
+    calculatedIndex = today.startOf("day").diff(targetDate.startOf("day"), "day");
 
-    // 验证索引范围，Bing API通常只支持前7天的数据
-    if (calculatedIndex < 0 || calculatedIndex > 7) {
+    if (calculatedIndex < 0 || calculatedIndex > MAX_INDEX) {
       throw new BingWallpaperError(
         `索引超出范围，仅支持0-7之间的值，当前值: ${calculatedIndex}`,
         "INDEX_OUT_OF_RANGE"
@@ -270,8 +309,19 @@ export async function getBingWallpaper(
     }
   }
 
+  const cacheKey = buildCacheKey({
+    market,
+    resolution,
+    timezone,
+    calculatedIndex,
+    targetDate,
+  });
+  const cachedResult = cache.get(cacheKey);
+  if (cachedResult) {
+    return cachedResult;
+  }
+
   try {
-    // 使用必应官方的API端点
     const apiUrl = `https://www.bing.com/HPImageArchive.aspx?format=js&idx=${calculatedIndex}&n=1&mkt=${market}`;
 
     const response = await fetchWithTimeout(apiUrl);
@@ -291,36 +341,23 @@ export async function getBingWallpaper(
 
     const image = data.images[0];
 
-    // 构建完整的图片URL
-    let imageUrl = image.url;
-    if (!imageUrl.startsWith("http")) {
-      imageUrl = `https://www.bing.com${imageUrl}`;
-    }
+    const result = toWallpaperData(image, resolution, targetDate.format("YYYYMMDD"));
 
-    // 处理分辨率
-    if (resolution !== "1920x1080") {
-      imageUrl = imageUrl.replace(/1920x1080/, resolution);
-    }
-
-    const result: BingWallpaperData = {
-      url: imageUrl,
-      title: image.title || "必应每日壁纸",
-      copyright: image.copyright || "",
-      copyrightlink: image.copyrightlink
-        ? image.copyrightlink.startsWith("http")
-          ? image.copyrightlink
-          : `https://www.bing.com${image.copyrightlink}`
-        : undefined,
-      startdate: image.startdate || targetDate.format("YYYYMMDD"),
-      urlbase: image.urlbase || "",
-    };
-
-    // 将结果存储到缓存中
     cache.set(cacheKey, result);
 
     return result;
   } catch (error) {
-    // 如果官方API失败，尝试备用API
+    if (!canUseBackupSource({ calculatedIndex, market })) {
+      if (error instanceof BingWallpaperError) {
+        throw error;
+      }
+
+      throw new BingWallpaperError(
+        `获取必应壁纸失败: ${error instanceof Error ? error.message : "未知错误"}`,
+        "FETCH_FAILED"
+      );
+    }
+
     try {
       const backupUrl = "https://bingw.jasonzeng.dev/?format=json";
       const response = await fetchWithTimeout(backupUrl);
@@ -335,32 +372,32 @@ export async function getBingWallpaper(
       const data = await response.json();
 
       const result: BingWallpaperData = {
-        url: data.url || "",
+        url: buildImageUrl(data.url || "", resolution),
         title: data.title || "必应每日壁纸",
         copyright: data.copyright || "",
-        copyrightlink: undefined,
-        startdate: data.startdate || dayjs().format("YYYYMMDD"),
+        copyrightlink: normalizeCopyrightLink(data.copyrightlink),
+        startdate: data.startdate || getNow(timezone).format("YYYYMMDD"),
         urlbase: data.urlbase || "",
       };
 
-      // 将备用结果也存储到缓存中
       cache.set(cacheKey, result);
 
       return result;
-    } catch (backupError) {
+    } catch {
       if (error instanceof BingWallpaperError) {
         throw error;
       }
 
       throw new BingWallpaperError(
-        `获取必应壁纸失败: ${
-          error instanceof Error ? error.message : "未知错误"
-        }`,
+        `获取必应壁纸失败: ${error instanceof Error ? error.message : "未知错误"}`,
         "FETCH_FAILED"
       );
     }
   }
 }
 
-// 默认导出主函数
+export function clearBingWallpaperCache(): void {
+  cache.clear();
+}
+
 export default getBingWallpaper;
