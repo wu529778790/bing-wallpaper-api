@@ -1,16 +1,48 @@
-name: Auto Test, Version & Publish
+name: Release
 
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
+    inputs:
+      release_type:
+        description: Version bump type
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      preid:
+        description: Pre-release identifier, used only for prerelease
+        required: true
+        default: test
+        type: choice
+        options:
+          - test
+          - beta
+          - rc
+      npm_tag:
+        description: npm dist-tag
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - latest
+          - next
+          - test
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
   id-token: write
 
 jobs:
-  auto-publish:
+  manual-release:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
@@ -26,31 +58,25 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10
           run_install: false
 
       - name: Get pnpm store directory
         shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: |
-          if [ -f pnpm-lock.yaml ]; then
-            pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
-          else
-            pnpm install
-          fi
+        run: pnpm install --frozen-lockfile
 
       - name: Build package
         run: pnpm run build
@@ -63,47 +89,111 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-      - name: Check if version should be updated
-        id: should_update
+      - name: Bump version
+        id: version
+        shell: bash
         run: |
-          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
-          if [[ "$LAST_COMMIT_MSG" == *"v1."* && "$LAST_COMMIT_MSG" == *"[skip ci]"* ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "Last commit was version update, skipping..."
+          RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+          PREID="${{ github.event.inputs.preid }}"
+
+          if [[ "$RELEASE_TYPE" == "prerelease" ]]; then
+            npm version prerelease --preid "$PREID" -m "chore: release v%s"
           else
-            echo "skip=false" >> $GITHUB_OUTPUT
-            echo "Proceeding with version update..."
+            npm version "$RELEASE_TYPE" -m "chore: release v%s"
           fi
 
-      - name: Update version
-        if: steps.should_update.outputs.skip == 'false'
-        run: |
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          echo "Current version: $CURRENT_VERSION"
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: update build files"
+      - name: Determine npm tag
+        id: dist_tag
+        shell: bash
+        run: |
+          INPUT_TAG="${{ github.event.inputs.npm_tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if [[ "$INPUT_TAG" != "auto" ]]; then
+            TAG="$INPUT_TAG"
+          elif [[ "$VERSION" == *"-"* ]]; then
+            TAG="test"
+          else
+            TAG="latest"
           fi
 
-          npm version patch -m "v%s [skip ci]"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "New version: $NEW_VERSION"
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-
-      - name: Push version update
-        if: steps.should_update.outputs.skip == 'false'
+      - name: Push version commit and tag
         run: |
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin HEAD:${{ github.event.repository.default_branch }}
           git push origin --tags
 
-      - name: Publish to NPM using Trusted Publishing
-        if: steps.should_update.outputs.skip == 'false'
+      - name: Publish to npm
+        run: npm publish --provenance --tag ${{ steps.dist_tag.outputs.tag }}
+
+  tag-release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify tag matches package version
+        shell: bash
         run: |
-          echo "npm version: $(npm --version)"
-          echo "Package name: $(node -p "require('./package.json').name")"
-          echo "Registry: $(npm config get registry)"
-          # 确保 npm 版本 >= 11.5.1 (Trusted Publishing 要求)
-          npm install -g npm@latest || true
-          npm publish --provenance
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+          if [[ "$TAG_VERSION" != "$PACKAGE_VERSION" ]]; then
+            echo "Tag version: $TAG_VERSION"
+            echo "Package version: $PACKAGE_VERSION"
+            exit 1
+          fi
+
+      - name: Build package
+        run: pnpm run build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Determine npm tag
+        id: dist_tag
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_NAME#v}" == *"-"* ]]; then
+            echo "tag=test" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        run: npm publish --provenance --tag ${{ steps.dist_tag.outputs.tag }}
